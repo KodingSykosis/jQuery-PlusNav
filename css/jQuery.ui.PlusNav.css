@@ -1,0 +1,94 @@
+/*csslint box-sizing:false*/
+
+.ui-plusnav,
+.ui-plusnav-subnav {
+    display: block;
+    background-color: #f0f0f0;
+    border: 1px solid #898c8f;
+    list-style: none;
+    padding: 0 10% 0 0;
+    margin: 0;
+    text-align: right;
+    height: 3em;
+    box-sizing: border-box;
+    white-space: nowrap;
+    -ms-filter: "progid:DXImageTransform.Microsoft.Shadow(Strength=3, Direction=180, Color='#4E4E4E')";
+    -webkit-box-shadow: 0 1px 3px 0 #4e4e4e;
+    -moz-box-shadow: 0 1px 3px 0 #4e4e4e;
+    box-shadow: 0 1px 3px 0 #4e4e4e;
+}
+
+.ui-plusnav > li {
+    display: inline-block;
+    box-sizing: border-box;
+    font-size: 1.2em;
+    margin: 0;
+    padding: 0;
+    border-right: 1px solid #FFF;
+}
+
+.ui-plusnav > li:first-child {
+    border-left: 1px solid #BBB;
+}
+
+.ui-plusnav > li > a {
+    border-right: 1px solid #BBB;
+}
+
+.ui-plusnav > li:first-child > a {
+    border-left: 1px solid #FFF;
+}
+
+.ui-plusnav  li > a {
+    display: inline-block;
+    box-sizing: border-box;
+    padding: 0.6em 1em;
+    width: 100%;
+    position: relative;
+}
+
+.ui-plusnav > .ui-plusnav-active > a:after,
+.ui-plusnav > li > a:hover:after {
+    position: absolute;
+    background: #71C5FF;
+    left: -1px;
+    right: 0;
+    height: 0.25em;
+    bottom: 0;
+    content: '';
+}
+
+.ui-plusnav-subnav {
+    position: absolute;
+    display: none;
+    left: 0;
+    height: 100%;
+    margin-top: -1px;
+    padding: 0;
+    box-shadow: 1px 3px 3px 0 #4e4e4e;
+    text-align: left;
+    z-index: 100;
+}
+
+.ui-plusnav-subnav li a {
+    width: 100%;
+}
+
+.ui-plusnav-subnav > li {
+    border-bottom: 1px solid #BBB;
+    display: block;
+    float: left;
+    width: 100%;
+    position: relative;
+}
+
+.ui-plusnav-subnav > .ui-plusnav-active:after,
+.ui-plusnav-subnav > li a:hover:after {
+    position: absolute;
+    background: #71C5FF;
+    top: 0;
+    bottom: 0;
+    width: 0.25em;
+    right: 0;
+    content: '';
+}

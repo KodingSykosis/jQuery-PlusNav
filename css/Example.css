@@ -1,0 +1,13 @@
+body {
+    padding: 0;
+    margin: 0;
+    overflow: hidden;
+}
+
+.ui-layout-content-inner {
+    margin-left: 4em;
+}
+
+.ui-plusnav-subnav {
+    min-width: 250px;
+}
