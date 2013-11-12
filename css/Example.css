@@ -1,7 +1,10 @@
+/*csslint box-sizing:false*/
+
 body {
     padding: 0;
     margin: 0;
     overflow: hidden;
+    background: #d4d4d4;
 }
 
 .ui-layout-content-inner {
@@ -10,4 +13,18 @@ body {
 
 .ui-plusnav-subnav {
     min-width: 250px;
+}
+
+.ui-navigation-trigger {
+    position:absolute;
+    margin:0.75em 2em;
+    height: 1.5em;
+    width: 4em;
+    text-align: center;
+    box-sizing: border-box;
+    padding: 0.15em 0;
+    border: 1px solid #71C5FF;
+    border-radius: 3px;
+    cursor: pointer;
+    z-index: 999;
 }

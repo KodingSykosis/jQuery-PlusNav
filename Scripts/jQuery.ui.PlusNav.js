@@ -2,27 +2,29 @@
 
 (function ($) {
     $.fn.widest = function() {
-        var widest = $();
-        var widestWidth = 0;
+        var widest = this.first();
+        var widestWidth = this.width();
 
         this.each(function() {
             var elem = $(this);
 
-            if (widestWidth < elem.prop('scrollWidth')) {
+            if (widestWidth < elem.width()) {
                 widest = elem;
-                widestWidth = elem.prop('scrollWidth');
+                widestWidth = elem.width();
             }
         });
 
         return widest;
     };
-    
+
     $.widget("kodingsykosis.plusnav", {
         options: {
             duration: 300,
             collapsedWidth: '3em',
             delay: 400,
-            pinned: false
+            isPinned: false,
+            autoExpand: true,
+            trigger: undefined
         },
 
         /*******************
@@ -30,6 +32,8 @@
          *******************/
 
         _create: function() {
+            var self = this;
+
             //Remove Text nodes to prevent formatting issues
             this.element
                 .contents()
@@ -44,13 +48,24 @@
                 .children('a')
                 .click($.proxy(this._onTabClicked, this));
 
+            var subNavs =
+            this.triggers =
             this.element
                 .find('> li > ul, > li > div')
-                .addClass('ui-plusnav-subnav')
-                .on({
-                    mouseenter: $.proxy(this._onMouseEnter, this),
-                    mouseleave: $.proxy(this._onMouseLeave, this)
-                })
+                .addClass('ui-plusnav-subnav');
+
+            if (this.options.trigger) {
+                this.triggers = $(this.options.trigger)
+                    .on({
+                        mouseenter: $.proxy(this._onMouseEnter, this),
+                        mouseleave: $.proxy(this._onMouseLeave, this),
+                        click: function() {
+                            self.togglePin();
+                        }
+                    });
+            }
+
+            subNavs
                 .children('li')
                 .click($.proxy(this._onSubItemClicked, this));
 
@@ -66,19 +81,15 @@
             }
         },
 
-        _init: function() {
-
-        },
-
-        _destroy: function() {
-
-        },
+        _init: function() { },
+        _destroy: function() { },
 
         /*******************
          *  Public Methods
          *******************/
 
         active: function(tabId) {
+            var self = this;
             var active =
                 this.element
                     .children('.ui-plusnav-active');
@@ -111,15 +122,22 @@
                     target.addClass('ui-plusnav-active');
                     active.removeClass('ui-plusnav-active');
                     active = target;
-                    this._showSub(active.children('.ui-plusnav-subnav:first'));
+
+                    var subMenu = active.children('.ui-plusnav-subnav:first');
+                    var targetWidth = this._subMenuWidth(subMenu) || 0;
+                    this._trigger('beforechange', undefined, { subMenuWidth: targetWidth });
+                    this._showSub(subMenu, function() {
+                        self._trigger('change', undefined, { subMenuWidth: subMenu.length === 0 ? 0 : self.width() });
+                    });
                 }
             }
 
             return active;
         },
 
-        expand: function() {
+        expand: function(callback) {
             if (!this.lastSub || !this.lastSub.is(':visible')) {
+                if (typeof callback === 'function') callback();
                 return;
             }
 
@@ -130,6 +148,11 @@
                 .stop(this.widgetName, true, true)
                 .delay(this.options['delay'], this.widgetName)
                 .queue(this.widgetName, function(next) {
+                    if (subMenu.length === 0) {
+                        next();
+                        return;
+                    }
+
                     subMenu
                         .stop(true, false)
                         .animate({
@@ -137,19 +160,31 @@
                             }, {
                                 duration: self.options['duration'],
                                 step: function(now, tween) {
-                                    self._trigger('expanding', now, tween);
+                                    self._trigger('expanding', undefined, { now: now, tween: tween });
                                 },
                                 complete: function() {
                                     self._trigger('expand');
                                     next();
                                 }
                             });
-                })
+                });
+
+            if (typeof callback === 'function') {
+                this.element
+                    .queue(function(next) {
+                        if (callback() !== false) {
+                            next();
+                        }
+                    });
+            }
+
+            this.element
                 .dequeue(this.widgetName);
         },
 
-        collapse: function() {
+        collapse: function(callback) {
             if (!this.lastSub || !this.lastSub.is(':visible')) {
+                if (typeof callback === 'function') callback();
                 return;
             }
 
@@ -160,6 +195,11 @@
                 .stop(this.widgetName, true, true)
                 .delay(this.options['delay'], this.widgetName)
                 .queue(this.widgetName, function(next) {
+                    if (subMenu.length === 0) {
+                        next();
+                        return;
+                    }
+
                     subMenu
                         .stop(true, false)
                         .animate({
@@ -167,62 +207,96 @@
                             }, {
                                 duration: self.options['duration'],
                                 step: function(now, tween) {
-                                    self._trigger('collapsing', now, tween);
+                                    self._trigger('collapsing', undefined, { now: now, tween: tween });
                                 },
                                 complete: function() {
                                     self._trigger('collapse');
                                     next();
                                 }
                             });
-                })
+                });
+
+            if (typeof callback === 'function') {
+                this.element
+                    .queue(function(next) {
+                        if (callback() !== false) {
+                            next();
+                        }
+                    });
+            }
+
+            this.element
                 .dequeue(this.widgetName);
         },
 
         pin: function() {
+            var self = this;
+
             this.options
-                .pinned = true;
-            
-            this.expand();
+                .isPinned = true;
+
+            this.expand(function() {
+                var width = 0;
+                if (self.lastSub) {
+                    width = self._subMenuWidth(self.lastSub);
+                }
+
+                self._trigger('pinned', undefined, { subMenuWidth: width });
+            });
         },
-        
+
         unpin: function() {
+            var self = this;
+
             this.options
-                .pinned = false;
-            
-            this.collapse();
+                .isPinned = false;
+
+            this.collapse(function() {
+                self._trigger('unpinned', undefined, { subMenuWidth: 0 });
+            });
         },
-        
+
         togglePin: function() {
-            if (this.options.pinned) {
+            if (this.options.isPinned) {
                 this.unpin();
             } else {
                 this.pin();
             }
         },
-        
+
         width: function() {
-            return this.lastSub.outerWidth(true);
+            if (this.lastSub) {
+                return this._subMenuWidth(this.lastSub);
+            }
+
+            return 0;
         },
-        
+
         /*******************
          *  Private Methods
          *******************/
 
-        _showSub: function(elem) {
+        _showSub: function(elem, callback) {
             if (this.lastSub) {
                 this._hideSub(this.lastSub, true);
             }
 
             var self = this;
             this.element
+                .stop(true, true)
                 .queue(this.widgetName, function(next) {
-                    if ((parseFloat(elem.css('minWidth')) || 0) > 0) {
-                        elem.data('minWidth', parseFloat(elem.css('minWidth')));
+//                    if ((parseFloat(elem.css('minWidth')) || 0) > 0) {
+//                        elem.data('minWidth', parseFloat(elem.css('minWidth')));
+//                    }
+
+                    if (elem.length === 0) {
+                        next();
+                        return;
                     }
 
                     elem.css({
                         top: self.element.outerHeight(),
-                        width: self.options.pinned ? self._subMenuWidth(elem) : self.options['collapsedWidth'],
+                        width: self.options.isPinned ? self._subMenuWidth(elem) : self.options['collapsedWidth'],
                         minWidth: 0,
                         overflow: 'hidden'
                     })
@@ -238,7 +312,18 @@
                                 next();
                             }
                         });
-                })
+                });
+
+            if (typeof callback === 'function') {
+                this.element
+                    .queue(function(next) {
+                        if (callback() !== false) {
+                            next();
+                        }
+                    });
+            }
+
+            this.element
                 .dequeue(this.widgetName);
         },
 
@@ -269,9 +354,17 @@
             var widest = elem.children().widest();
             var inner = widest.children('a:first');
             var paddingRight = parseFloat(inner.css('paddingRight'));
-            var width = widest.prop('scrollWidth') + paddingRight;
-            var minWidth = elem.data('minWidth') || 0;
-            return width < minWidth ? minWidth : width;
+            var width = widest.width() + paddingRight;
+            var minWidth = this._minWidth(elem);
+            return Math.max(minWidth, width);
+        },
+
+        _minWidth: function(elem) {
+            if ((parseFloat(elem.css('minWidth')) || 0) > 0) {
+                elem.data('minWidth', parseFloat(elem.css('minWidth')) || 0);
+            }
+
+            return parseFloat(elem.data('minWidth') || 0);
         },
 
         /*******************
@@ -285,13 +378,13 @@
         },
 
         _onMouseEnter: function(event) {
-            if (!this.options.pinned) {
+            if (!this.options.isPinned && (!this.options.autoExpand || this.options.trigger)) {
                 this.expand();
             }
         },
 
         _onMouseLeave: function(event) {
-            if (!this.options.pinned) {
+            if (!this.options.isPinned && (!this.options.autoExpand || this.options.trigger)) {
                 this.collapse();
             }
         },
